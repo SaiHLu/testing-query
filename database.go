@@ -1,36 +1,24 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"os"
 
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
-func customConfig() (*pgxpool.Config, error) {
-	connString := fmt.Sprintf("user=%s password=%s host=%s port=%s dbname=%s", os.Getenv("DATABASE_USERNAME"), os.Getenv("DATABASE_PASSWORD"), os.Getenv("DATABASE_HOST"), os.Getenv("DATABASE_PORT"), os.Getenv("DATABASE_NAME"))
+func SetupDbConnection() (*gorm.DB, error) {
+	dsn := fmt.Sprintf("user=%s password=%s host=%s port=%s dbname=%s", os.Getenv("DATABASE_USERNAME"), os.Getenv("DATABASE_PASSWORD"), os.Getenv("DATABASE_HOST"), os.Getenv("DATABASE_PORT"), os.Getenv("DATABASE_NAME"))
 
-	config, err := pgxpool.ParseConfig(connString)
-	if err != nil {
-		return nil, err
-	}
+	CentralDB, err := gorm.Open(postgres.New(postgres.Config{
+		DriverName:           "pgx",
+		DSN:                  dsn,
+		PreferSimpleProtocol: true,
+	}), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Info), // Enable detailed logging
+	})
 
-	config.AfterConnect = func(ctx context.Context, c *pgx.Conn) error {
-		c.TypeMap().RegisterDefaultPgType(pgx.TextFormatCode, "text")
-		return nil
-	}
-
-	return config, nil
-}
-
-func SetupDbConnection() (*pgxpool.Pool, error) {
-	pgxConfig, err := customConfig()
-	dbpool, err := pgxpool.NewWithConfig(context.Background(), pgxConfig)
-	if err != nil {
-		return nil, err
-	}
-
-	return dbpool, err
+	return CentralDB, err
 }

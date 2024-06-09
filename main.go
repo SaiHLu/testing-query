@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	"log"
@@ -23,6 +22,10 @@ type Tenant struct {
 	DeletedAt   *time.Time
 }
 
+func (Tenant) TableName() string {
+	return "tenant"
+}
+
 func main() {
 	envType := flag.String("APP_ENV", "development", "set APP_ENV")
 	flag.Parse()
@@ -39,7 +42,6 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer dbpool.Close()
 
 	mux := http.NewServeMux()
 
@@ -52,9 +54,9 @@ func main() {
 		w.Header().Set("Content-Type", "application/json")
 
 		var tenant Tenant
-		err = dbpool.QueryRow(context.Background(), "select * from tenant Limit 1").Scan(&tenant.ID, &tenant.Name, &tenant.Company, &tenant.Status, &tenant.IsDedicated, &tenant.CreatedAt, &tenant.UpdatedAt, &tenant.DeletedAt)
-		if err != nil {
-			log.Println("Query Error: ", err)
+		result := dbpool.First(&tenant)
+		if result.Error != nil {
+			log.Println("Query Error: ", result.Error)
 		}
 
 		log.Println("tenant: ", tenant)
