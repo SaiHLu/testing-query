@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/jackc/pgx/v4"
-	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func customConfig() (*pgxpool.Config, error) {
@@ -18,8 +18,7 @@ func customConfig() (*pgxpool.Config, error) {
 	}
 
 	config.AfterConnect = func(ctx context.Context, c *pgx.Conn) error {
-		connInfo := c.ConnInfo()
-		connInfo.RegisterDefaultPgType(pgx.TextFormatCode, "text")
+		c.TypeMap().RegisterDefaultPgType(pgx.TextFormatCode, "text")
 		return nil
 	}
 
@@ -28,7 +27,7 @@ func customConfig() (*pgxpool.Config, error) {
 
 func SetupDbConnection() (*pgxpool.Pool, error) {
 	pgxConfig, err := customConfig()
-	dbpool, err := pgxpool.ConnectConfig(context.Background(), pgxConfig)
+	dbpool, err := pgxpool.NewWithConfig(context.Background(), pgxConfig)
 	if err != nil {
 		return nil, err
 	}
